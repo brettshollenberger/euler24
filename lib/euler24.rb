@@ -11,7 +11,7 @@
 require_relative 'output/outputter_manifest'
 
 class Permutator
-  attr_accessor :final_perm, :nth_permutation, :number, :permutations_of_current_digit, :last_num, :start_time, :end_time, :elapsed
+  attr_accessor :final_perm, :nth_permutation, :number, :permutations_of_current_digit, :last_num, :start_time, :end_time, :elapsed, :this_digit
 
   include Output
 
@@ -21,15 +21,17 @@ class Permutator
   end
 
   def nth_permutation(nth_permutation, number)
-    set_vars(nth_permutation, number)
-    clock_in
-    push_to_perm
-    clock_out
-    outputter = Output::ConsoleOutputter.new(@final_perm, @elapsed)
-    return @final_perm.join('').to_i
+    setup(nth_permutation, number)
+    permutate
+    finish_up
   end
 
 private
+
+  def setup(nth_permutation, number)
+    set_vars(nth_permutation, number)
+    clock_in
+  end
 
   def set_vars(nth_permutation, number)
     @nth_permutation = nth_permutation
@@ -41,6 +43,63 @@ private
     @start_time = Time.now
   end
 
+  def permutate
+    calculate_this_digit while more_permutations?
+    find_last_number
+  end
+
+  def more_permutations?
+    @permutations_of_current_digit > 0
+  end
+
+  def find_last_number
+    @last_num += 1 while num_in_perm?(@last_num)
+    @final_perm.push(@last_num)
+  end
+
+  def calculate_this_digit
+    reset_this_digit
+    check_next_digit while not_this_digit?
+    push_this_digit_to_final_perm
+  end
+
+  def not_this_digit?
+    @nth_permutation - factorialize(@permutations_of_current_digit) > 0
+  end
+
+  def check_next_digit
+    @nth_permutation = @nth_permutation - factorialize(permutations_of_current_digit)
+    next_legal_digit
+  end
+
+  def next_legal_digit
+    @this_digit += 1
+    @this_digit += 1 while num_in_perm?(@this_digit)
+  end
+
+  def push_this_digit_to_final_perm
+    @final_perm.push(@this_digit)
+    @permutations_of_current_digit -= 1
+  end
+
+  def reset_this_digit
+    @this_digit = 0
+  end
+
+  def factorialize(permutations)
+    (1..permutations).inject(:*)
+  end
+
+  def num_in_perm?(num)
+    @final_perm.include?(num)
+  end
+
+  def finish_up
+    clock_out
+    outputter = Output::ConsoleOutputter.new(@final_perm, @elapsed)
+    return @final_perm.join('').to_i
+  end
+
   def clock_out
     @end_time = Time.now
     mark_elapsed
@@ -48,46 +107,6 @@ private
 
   def mark_elapsed
     @elapsed = @end_time - @start_time
-  end
-
-  def push_to_perm
-    while @permutations_of_current_digit > 0
-      calc_each_num(@permutations_of_current_digit)
-      @permutations_of_current_digit -= 1
-    end
-    last_num_in_perm
-  end
-
-  def last_num_in_perm
-    while num_in_perm?(@last_num)
-      @last_num += 1
-    end
-    @final_perm.push(@last_num)
-  end
-
-  def calc_each_num(perms)
-    num = 0
-    while @nth_permutation - factorialize(perms) > 0
-      @nth_permutation = @nth_permutation - factorialize(perms)
-      num += 1
-      while num_in_perm?(num)
-        num += 1
-      end
-    end
-    @final_perm.push(num)
-  end
-
-  def factorialize(nth_permutation)
-    (1..nth_permutation).inject(:*)
-  end
-
-  def num_in_perm?(num)
-    @final_perm.each do |in_the_perm|
-      if num == in_the_perm
-        return true
-      end
-    end
-    return false
   end
 
 end
