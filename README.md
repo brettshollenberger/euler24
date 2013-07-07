@@ -1,4 +1,4 @@
-Euler24 Millionth Permutation
+Project Euler Problem 24: Millionth Permutation
 =======
 
 Solution to Project Euler Problem 24
